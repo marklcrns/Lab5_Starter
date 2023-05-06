@@ -6,9 +6,25 @@ function init() {
   const voiceSelect = document.getElementById('voice-select');
   const button = document.querySelector('button');
 
+  // Create a promise that will resolve when all voices are loaded
+  // Workaround for voices not being loaded when page is loaded
+  const allVoicesObtained = new Promise(function(resolve, reject) {
+    let voices = window.speechSynthesis.getVoices();
+    if (voices.length !== 0) {
+      resolve(voices);
+    } else {
+      window.speechSynthesis.addEventListener("voiceschanged", function() {
+        voices = window.speechSynthesis.getVoices();
+        resolve(voices);
+      });
+    }
+  });
+
   // Load all avaliable voices that can be used for SpeachSynthesiser API into
   // voice select
-  populateVoiceList(voiceSelect);
+  allVoicesObtained.then((voices) => {
+    populateVoiceList(voiceSelect);
+  });
 
   // Add event listener to button
   button.addEventListener('click', () => {
@@ -17,7 +33,7 @@ function init() {
 }
 
 function populateVoiceList(select) {
-  speechSynthesis.getVoices().forEach((voice) => {
+  window.speechSynthesis.getVoices().forEach((voice) => {
     const option = document.createElement('option');
     option.value = voice.name;
     option.textContent = `${voice.name} (${voice.lang})`;
@@ -33,7 +49,6 @@ function speachButtonClickListener(select) {
   const utterance = new SpeechSynthesisUtterance(text);
   const voice = select.value;
 
-  // Get selected voice
   speechSynthesis.getVoices().forEach((v) => {
     if (v.name === voice) {
       utterance.voice = v;
